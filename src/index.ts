@@ -17,6 +17,9 @@ namespace thread {
   }
 
   export const fetch = async (id: number, base_url: string): Promise<Thread> => {
+    await new Promise((rsv) => {
+      setTimeout(() => { rsv(null); }, 10_000);
+    });
     console.log(`[${id.toString().padEnd(2, '0')}]${base_url}`);
 
     const pages = await fetch_all_pages(base_url);
@@ -47,7 +50,10 @@ namespace thread {
     const urls = Array(N).fill(0).map((_, page) => {
       return get_page_url(base_url, page);
     });
-    const reqs = urls.map(async (url) => {
+    const reqs = urls.map(async (url, page) => {
+      await new Promise((rsv) => {
+        setTimeout(() => { rsv(null); }, page * 300);
+      });
       return web_fetch(url).then(r => r.text());
     })
 
