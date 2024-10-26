@@ -1,0 +1,23 @@
+{
+  "devDependencies": {
+    "@types/node": "^22.7.5",
+    "esbuild": "0.24.0",
+    "gts": "^6.0.2",
+    "typescript": "^5.6.3"
+  },
+  "scripts": {
+    "compile": "node esbuild.config.js",
+    "start": "node ./dist/bundle.js",
+    "dev": "npm run compile && npm run start"
+  },
+  "name": "bakusai-crawler",
+  "version": "0.1.0",
+  "main": ".prettierrc.js",
+  "dependencies": {
+    "cheerio": "^1.0.0"
+  },
+  "ketwords": [],
+  "author": "zephyr<i@zephyr.moe>",
+  "license": "MIT",
+  "description": "Crawler for bakusai"
+}
