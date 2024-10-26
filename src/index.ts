@@ -1,5 +1,8 @@
+import * as fs from 'node:fs';
 import { parse_page } from "@/parse";
 import { Page, PageHead, Content } from "@/parse";
+
+const web_fetch = fetch;
 
 namespace thread {
   // there's at most 20 * 50 comments in a thread
@@ -8,15 +11,20 @@ namespace thread {
   // thread has the same structure as page
   // it's the concatenated version of all pages
   export interface Thread {
+    id: number,
     head: PageHead,
     contents: Content[]
   }
 
-  export const fetch_and_merge = async (base_url: string): Promise<Thread> => {
+  export const fetch = async (id: number, base_url: string): Promise<Thread> => {
+    console.log(`[${id.toString().padEnd(2, '0')}]${base_url}`);
+
     const pages = await fetch_all_pages(base_url);
     const fst = pages[0];
-    const b = pages.every(p => p.head == fst.head);
-    console.log(b);
+    const _eq = (a: PageHead, b: PageHead) => a.next === b.next && a.prev === b.prev;
+    if (!pages.every(p => _eq(p.head, fst.head))) {
+      throw ('inconsistent page head');
+    }
 
     // merge from page=N << page=1
     const thread_head = fst.head;
@@ -29,7 +37,7 @@ namespace thread {
       })
       return merged;
     }, [] as Content[]);
-    return { head: thread_head, contents: thread_contents };
+    return { id, head: thread_head, contents: thread_contents };
   }
 
   // fetch all pages of a thread
@@ -40,7 +48,7 @@ namespace thread {
       return get_page_url(base_url, page);
     });
     const reqs = urls.map(async (url) => {
-      return fetch(url).then(r => r.text());
+      return web_fetch(url).then(r => r.text());
     })
 
     let raw_pages;
@@ -64,10 +72,33 @@ namespace thread {
   }
 }
 
-const BASE_URL = process.env.BASE_URL!;
+namespace topic {
+  export const fetch = async (url: string): Promise<thread.Thread[]> => {
+    const all: thread.Thread[] = [];
+    await fetch_rec(0, url, all);
+    all.sort((a, b) => a.id - b.id);
+    return all;
+  }
 
+  const fetch_rec = async (id: number, url: string, all: thread.Thread[]) => {
+    if (all.find(e => e.id == id)) return;
+
+    const th = await thread.fetch(id, url);
+    all.push(th);
+    console.log(`[${th.id.toString().padEnd(2, '0')}]done!`);
+
+    const [prev, next] = [th.head.prev, th.head.next];
+    const rec = (id: number, url?: string) => {
+      return url && fetch_rec(id, url!, all);
+    }
+    await Promise.all([rec(id - 1, prev), rec(id + 1, next)]);
+  }
+}
+
+const BASE_URL = process.env.BASE_URL!;
 async function main() {
-  await thread.fetch_and_merge(BASE_URL).then(console.log)
+  const all = await topic.fetch(BASE_URL);
+  console.log(all);
 }
 
 main()
