@@ -1,15 +1,5 @@
-import * as fs from 'node:fs';
-
 import { parse_page } from "@/parse";
 import { Page, PageHead, Content } from "@/parse";
-
-const BASE_URL = process.env.BASE_URL!;
-
-async function main() {
-  const th = await thread.fetch(BASE_URL);
-}
-
-main();
 
 namespace thread {
   // there's at most 20 * 50 comments in a thread
@@ -22,7 +12,7 @@ namespace thread {
     contents: Content[]
   }
 
-  export const fetch = async (base_url: string): Promise<Thread> => {
+  export const fetch_and_merge = async (base_url: string): Promise<Thread> => {
     const pages = await fetch_all_pages(base_url);
     const fst = pages[0];
     const b = pages.every(p => p.head == fst.head);
@@ -73,3 +63,12 @@ namespace thread {
     return `${base}/p=${page}`;
   }
 }
+
+const BASE_URL = process.env.BASE_URL!;
+
+async function main() {
+  await thread.fetch_and_merge(BASE_URL).then(console.log)
+}
+
+main()
+
