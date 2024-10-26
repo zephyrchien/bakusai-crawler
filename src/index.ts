@@ -17,11 +17,6 @@ namespace thread {
   }
 
   export const fetch = async (id: number, base_url: string): Promise<Thread> => {
-    await new Promise((rsv) => {
-      setTimeout(() => { rsv(null); }, 10_000);
-    });
-    console.log(`[${id.toString().padEnd(2, '0')}]${base_url}`);
-
     const pages = await fetch_all_pages(base_url);
     const fst = pages[0];
     const _eq = (a: PageHead, b: PageHead) => a.next === b.next && a.prev === b.prev;
@@ -86,12 +81,22 @@ namespace topic {
     return all;
   }
 
+  const showid = (id: number): string => {
+    const sign = id >= 0 ? '+' : '-';
+    const value = Math.abs(id).toString().padStart(3, '0');
+    return sign + value;
+  }
+
   const fetch_rec = async (id: number, url: string, all: thread.Thread[]) => {
     if (all.find(e => e.id == id)) return;
 
+    await new Promise((rsv) => {
+      setTimeout(() => { rsv(null); }, 10_000);
+    });
+    console.log(`[${showid(id)}]${url}`);
     const th = await thread.fetch(id, url);
     all.push(th);
-    console.log(`[${th.id.toString().padEnd(2, '0')}]done!`);
+    console.log(`[${showid(id)}]done!`);
 
     const [prev, next] = [th.head.prev, th.head.next];
     const rec = (id: number, url?: string) => {
@@ -102,9 +107,16 @@ namespace topic {
 }
 
 const BASE_URL = process.env.BASE_URL!;
+const OUT_DIR = process.env.OUT_DIR!;
+
+console.log('base_url=%s', BASE_URL);
+console.log('out_dir=%s', OUT_DIR);
+
 async function main() {
   const all = await topic.fetch(BASE_URL);
-  console.log(all);
+  all.map(e => JSON.stringify(e.contents)).forEach((s, i) => {
+    fs.writeFile(`${OUT_DIR}/${i + 1}.json`, s, () => { });
+  })
 }
 
 main()
