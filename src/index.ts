@@ -1,4 +1,5 @@
-import * as fs from 'node:fs';
+import fs from 'node:fs';
+import assert from 'node:assert';
 import { parse_page } from "@/parse";
 import { Page, PageHead, Content } from "@/parse";
 
@@ -21,7 +22,8 @@ namespace thread {
     const fst = pages[0];
     const _eq = (a: PageHead, b: PageHead) => a.next === b.next && a.prev === b.prev;
     if (!pages.every(p => _eq(p.head, fst.head))) {
-      throw ('inconsistent page head');
+      const heads = pages.map(e => e.head);
+      throw ('inconsistent page head:\n' + JSON.stringify(heads));
     }
 
     // merge from page=N << page=1
@@ -71,6 +73,13 @@ namespace thread {
   const get_page_url = (base: string, page: number): string => {
     return `${base}/p=${page}`;
   }
+
+  export const test = async (url: string) => {
+    const page_url = get_page_url(url, 3);
+    const data = await web_fetch(page_url).then(x => x.text());
+    const page = parse_page(data);
+    console.log(page.head);
+  }
 }
 
 namespace topic {
@@ -106,18 +115,27 @@ namespace topic {
   }
 }
 
+const DEV = process.env.DEV == 'true';
 const BASE_URL = process.env.BASE_URL!;
 const OUT_DIR = process.env.OUT_DIR!;
 
-console.log('base_url=%s', BASE_URL);
-console.log('out_dir=%s', OUT_DIR);
+assert(BASE_URL);
+assert(OUT_DIR);
+
+console.log(`dev=${DEV}`);
+console.log(`base_url=${BASE_URL}`);
+console.log(`out_dir=${OUT_DIR}`);
 
 async function main() {
   const all = await topic.fetch(BASE_URL);
-  all.map(e => JSON.stringify(e.contents)).forEach((s, i) => {
+  all.map(e => JSON.stringify(e.contents, null, 2)).forEach((s, i) => {
     fs.writeFile(`${OUT_DIR}/${i + 1}.json`, s, () => { });
   })
 }
 
-main()
+async function dev() {
+  const url = process.env.DEV_URL!;
+  thread.test(url);
+}
 
+DEV ? dev() : main();

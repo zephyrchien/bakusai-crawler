@@ -35,9 +35,9 @@ export interface Content {
 }
 
 const parse_head = (page: Node): PageHead => {
-  const head = page.find('dl#thr_top #thr_pager')
-  const prev = head.find('.sre_mae a');
-  const next = head.find('.sre_tsugi a');
+  const pager = page.find('#thr_pager')
+  const prev = pager.find('.sre_mae a');
+  const next = pager.find('.sre_tsugi a');
   const prev_url = prev.attr('href');
   const next_url = next.attr('href');
   return { prev: prev_url, next: next_url };
